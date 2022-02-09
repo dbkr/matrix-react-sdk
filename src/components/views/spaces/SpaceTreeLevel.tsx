@@ -43,6 +43,7 @@ import SpaceContextMenu from "../context_menus/SpaceContextMenu";
 import AccessibleTooltipButton from "../elements/AccessibleTooltipButton";
 import { useRovingTabIndex } from "../../../accessibility/RovingTabIndex";
 import { KeyBindingAction } from "../../../accessibility/KeyboardShortcuts";
+import { PosthogAnalytics } from "../../../PosthogAnalytics";
 
 interface IButtonProps extends Omit<ComponentProps<typeof AccessibleTooltipButton>, "title" | "onClick"> {
     space?: Room;
@@ -109,6 +110,18 @@ export const SpaceButton: React.FC<IButtonProps> = ({
         />;
     }
 
+    let onClick = props.onClick;
+    if (spaceKey) {
+        onClick = (ev: ButtonEvent) => {
+            PosthogAnalytics.trackInteraction(
+                SpaceStore.instance.activeSpace === spaceKey ? "SpacePanelSelectedSpace" : "SpacePanelSwitchSpace",
+                ev,
+            );
+
+            SpaceStore.instance.setActiveSpace(spaceKey);
+        };
+    }
+
     return (
         <AccessibleTooltipButton
             {...props}
@@ -118,7 +131,7 @@ export const SpaceButton: React.FC<IButtonProps> = ({
                 mx_SpaceButton_narrow: isNarrow,
             })}
             title={label}
-            onClick={spaceKey ? () => SpaceStore.instance.setActiveSpace(spaceKey) : props.onClick}
+            onClick={onClick}
             onContextMenu={openMenu}
             forceHide={!isNarrow || menuDisplayed}
             inputRef={handle}
@@ -270,6 +283,12 @@ export class SpaceItem extends React.PureComponent<IItemProps, IItemState> {
     private onClick = (ev: React.MouseEvent) => {
         ev.preventDefault();
         ev.stopPropagation();
+        PosthogAnalytics.trackInteraction(
+            SpaceStore.instance.activeSpace === this.props.space.roomId
+                ? "SpacePanelSelectedSpace"
+                : "SpacePanelSwitchSpace",
+            ev,
+        );
         SpaceStore.instance.setActiveSpace(this.props.space.roomId);
     };
 

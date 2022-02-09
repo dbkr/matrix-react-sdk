@@ -310,7 +310,7 @@ export class PosthogAnalytics {
     }
 
     // Temporary placement, will be moved into PosthogTrackers when other PR lands
-    public static trackInteraction(name: InteractionEvent["name"], ev?: SyntheticEvent): void {
+    public static trackInteraction(name: InteractionEvent["name"], ev?: SyntheticEvent, index?: number): void {
         let interactionType: InteractionEvent["interactionType"];
         if (ev?.type === "click") {
             interactionType = "Pointer";
@@ -321,6 +321,7 @@ export class PosthogAnalytics {
         PosthogAnalytics.instance.trackEvent<InteractionEvent>({
             eventName: "Interaction",
             interactionType,
+            index,
             name,
         });
     }

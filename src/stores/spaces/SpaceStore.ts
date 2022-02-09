@@ -53,6 +53,7 @@ import {
 } from ".";
 import { getCachedRoomIDForAlias } from "../../RoomAliasCache";
 import { EffectiveMembership, getEffectiveMembership } from "../../utils/membership";
+import { InteractionEvent, PosthogAnalytics } from "../../PosthogAnalytics";
 
 interface IState {}
 
@@ -1107,10 +1108,24 @@ export class SpaceStoreClass extends AsyncStoreWithClient<IState> {
                 // Metaspaces start at 1, Spaces follow
                 if (payload.num < 1 || payload.num > 9) break;
                 const numMetaSpaces = this.enabledMetaSpaces.length;
+
+                let spaceKey: SpaceKey;
                 if (payload.num <= numMetaSpaces) {
-                    this.setActiveSpace(this.enabledMetaSpaces[payload.num - 1]);
+                    spaceKey = this.enabledMetaSpaces[payload.num - 1];
                 } else if (this.spacePanelSpaces.length > payload.num - numMetaSpaces - 1) {
-                    this.setActiveSpace(this.spacePanelSpaces[payload.num - numMetaSpaces - 1].roomId);
+                    spaceKey = this.spacePanelSpaces[payload.num - numMetaSpaces - 1].roomId;
+                }
+
+                if (spaceKey) {
+                    PosthogAnalytics.instance.trackEvent<InteractionEvent>({
+                        eventName: "Interaction",
+                        interactionType: "Keyboard",
+                        index: payload.num,
+                        name: this.activeSpace === spaceKey
+                            ? "SpacePanelSelectedSpace"
+                            : "SpacePanelSwitchSpace",
+                    });
+                    this.setActiveSpace(spaceKey);
                 }
                 break;
             }
