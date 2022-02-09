@@ -491,6 +491,8 @@ export class SpaceStoreClass extends AsyncStoreWithClient<IState> {
                 this.parentMap.getOrCreate(child.roomId, new Set()).add(space.roomId);
             });
         });
+
+        PosthogAnalytics.instance.setProperty("numSpaces", joinedSpaces.length);
     };
 
     private rebuildHomeSpace = () => {
