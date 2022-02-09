@@ -14,14 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { SyntheticEvent } from "react";
 import posthog, { PostHog } from 'posthog-js';
 import { MatrixClient } from "matrix-js-sdk/src/client";
 import { logger } from "matrix-js-sdk/src/logger";
+import { Interaction as InteractionEvent } from "matrix-analytics-events/types/typescript/Interaction";
 
 import PlatformPeg from './PlatformPeg';
 import SdkConfig from './SdkConfig';
 import { MatrixClientPeg } from "./MatrixClientPeg";
 import SettingsStore from "./settings/SettingsStore";
+
+export { Interaction as InteractionEvent } from "matrix-analytics-events/types/typescript/Interaction";
 
 /* Posthog analytics tracking.
  *
@@ -260,9 +264,7 @@ export class PosthogAnalytics {
         this.setAnonymity(Anonymity.Disabled);
     }
 
-    public trackEvent<E extends IEvent>(
-        event: E,
-    ): void {
+    public trackEvent<E extends IEvent>(event: E): void {
         if (this.anonymity == Anonymity.Disabled || this.anonymity == Anonymity.Anonymous) return;
         const eventWithoutName = { ...event };
         delete eventWithoutName.eventName;
@@ -305,5 +307,21 @@ export class PosthogAnalytics {
             (originalSettingName, changedInRoomId, atLevel, newValueAtLevel, newValue) => {
                 this.updateAnonymityFromSettings(!!newValue);
             });
+    }
+
+    // Temporary placement, will be moved into PosthogTrackers when other PR lands
+    public static trackInteraction(name: InteractionEvent["name"], ev?: SyntheticEvent): void {
+        let interactionType: InteractionEvent["interactionType"];
+        if (ev?.type === "click") {
+            interactionType = "Pointer";
+        } else if (ev?.type.startsWith("key")) {
+            interactionType = "Keyboard";
+        }
+
+        PosthogAnalytics.instance.trackEvent<InteractionEvent>({
+            eventName: "Interaction",
+            interactionType,
+            name,
+        });
     }
 }
